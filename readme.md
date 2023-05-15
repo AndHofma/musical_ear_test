@@ -74,5 +74,5 @@ To start and run the experiment, follow these steps:
 ## 8. Experiment-Start
 * First, a small dialogue window will appear. 
 * Enter the subject id and press "OK". 
-* The results will be recorded in the file "*SUBJECT_ID*\_*timestamp*\.csv" in the "**results**" folder.
+* The results will be recorded in the file "MET_*phase*\_results_*subject_ID*\_*timestamp*\.csv" in the **results** folder.
 
