@@ -12,6 +12,7 @@ Swaminathan, S., Kragness, H. E., & Schellenberg, E. G. (2021). The Musical Ear 
 """
 
 
+# Set-up
 import os
 import random
 import datetime
@@ -42,15 +43,16 @@ def check_paths(base_audio_path, base_image_path, results_path):
 
 def get_participant_info():
     """
-    Open a dialogue box with 2 fields: current date and time, and subject_ID.
+    Open a dialogue box with 3 fields: experiment name, current date and time, and subject_ID.
     Returns a dictionary with the entered information.
     """
     exp_data = {
+        'experiment': 'musical_ear_test',
         'cur_date': datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         'Subject_ID': 'subject_ID'
     }
     # Dialogue box to get participant information
-    info_dialog = gui.DlgFromDict(dictionary=exp_data, title='Musical Ear Test', fixed=['cur_date'])
+    info_dialog = gui.DlgFromDict(dictionary=exp_data, title='Musical Ear Test', fixed=['cur_date', 'experiment'])
 
     if info_dialog.OK:
         return exp_data
@@ -58,6 +60,7 @@ def get_participant_info():
         core.quit()
 
 
+# participant questionnaire musical skills
 def load_audio_files(base_audio_path, test_type):
     """
     Load audio files for a given test type (melody or rhythm) from a folder.
@@ -90,7 +93,6 @@ def load_audio_files(base_audio_path, test_type):
 
     # Return the lists of example files and test files
     return example_files, test_files
-
 
 
 def display_instructions(win, instruction_text):
@@ -252,6 +254,7 @@ def play_stimulus_and_display_prompt(win, stimulus, prompt_text, time_limit, tri
 
     # Clear the screen after collecting the response
     win.flip()
+    core.wait(1)
 
     return response
 
@@ -288,7 +291,8 @@ def display_feedback(win, correct):
     win.flip()
 
 
-def musical_ear_test(win, test_type, example_files, test_files, instruction_texts, output_filename, base_image_path):
+def musical_ear_test(win, test_type, example_files, test_files, instruction_texts, practice_output_filename, test_output_filename, base_image_path, participant_info):
+
     """
     Perform the musical ear test using given example and test files, and save results progressively to the output file.
 
@@ -298,7 +302,8 @@ def musical_ear_test(win, test_type, example_files, test_files, instruction_text
     example_files (list): A list of example audio file paths.
     test_files (list): A list of test audio file paths.
     instruction_texts (dict): A dictionary containing the instruction texts.
-    output_filename (str): The name of the output file to save results.
+    practice_output_filename (str): The name of the output file to save practice trial results.
+    test_output_filename (str): The name of the output file to save test trial results.
     base_image_path (str): The base path of the image files to display during the test.
     """
 
@@ -312,10 +317,30 @@ def musical_ear_test(win, test_type, example_files, test_files, instruction_text
     }
 
     # Function to append a single result to the CSV file
-    def append_result_to_csv(result, filename):
-        with open(filename, 'a') as output_file:
+    def append_result_to_csv(result, practice_filename, test_filename, participant_info):
+        """
+        Appends the given participant's test results to a CSV file. The function determines which file to write to (practice or test)
+        based on the 'phase' key in the 'result' dictionary.
+
+        Parameters:
+        result (dict): A dictionary containing the participant's results from the test. It should include keys like 'trial', 'type',
+        'phase', 'stimulus', 'response', 'correct', 'accuracy', 'start_time', 'end_time', and 'duration'.
+
+        practice_filename (str): The name of the file where practice results should be written.
+
+        test_filename (str): The name of the file where test results should be written.
+
+        participant_info (dict): A dictionary containing information about the participant. It should include keys 'Subject_ID'
+        and 'cur_date' (current date).
+
+        Returns:
+        None
+        """
+        output_filename = practice_filename if result['phase'] == 'practice' else test_filename
+        with open(output_filename, 'a') as output_file:
             output_file.write(
-                f"{result['trial']},{result['type']},{result['phase']},{result['stimulus']},{result['response']},{result['correct']},{result['accuracy']},{result['start_time']},{result['end_time']},{result['duration']}\n")
+                f"{participant_info['experiment']},{participant_info['Subject_ID']},{participant_info['cur_date']},{result['trial']},{result['type']},{result['phase']},{result['stimulus']},{result['response']},{result['correct']},{result['accuracy']},{result['start_time']},{result['end_time']},{result['duration']}\n"
+            )
 
     # Start recording the duration of each task
     start_time = time.time()
@@ -362,7 +387,7 @@ def musical_ear_test(win, test_type, example_files, test_files, instruction_text
             'end_time': end_time_str,
             'duration': duration_str
         })
-        append_result_to_csv(results[-1], output_filename)
+        append_result_to_csv(results[-1], practice_output_filename, test_output_filename, participant_info)
 
         # Display feedback (correct or incorrect) after each example trial
         display_feedback(win, response == correct_answer)
@@ -410,7 +435,7 @@ def musical_ear_test(win, test_type, example_files, test_files, instruction_text
             'end_time': end_time_str,
             'duration': duration_str
         })
-        append_result_to_csv(results[-1], output_filename)
+        append_result_to_csv(results[-1], practice_output_filename, test_output_filename, participant_info)
 
     return results
 
@@ -422,18 +447,16 @@ def main():
     """
     # Instruction texts for various parts of the experiment
     instruction_texts = {
-        'general_intro': 'Willkommen zum "Musical-Ear-Test / Musikalisches-Gehör-Test" \n\n'
+        'general_intro': 'Willkommen zum Test "Musikalisches-Gehör" \n\n'
                          'Dieser Test besteht aus zwei Teilen: \n\n'
-                         'Dem Melodie-Test und dem Rhythmus-Test. \n\n'
+                         'dem Melodie-Teil und dem Rhythmus-Teil. \n\n'
                          'Drücken Sie eine beliebige Taste, wenn Sie bereit sind, mit den Beispielen anzufangen.',
 
-        'melody_part1': 'Willkommen zum Melodie-Test. \n\n'
+        'melody_part1': 'Melodie. \n\n'
                         'Sie werden nun immer zwei kurze Melodien hintereinander hören. \n\n'
-                        'Sie müssen entscheiden, ob diese zwei Melodien identisch sind: \n'
+                        'Sie müssen entscheiden, ob diese zwei Melodien identisch sind. \n'
                         'Sind sie identisch, drücken Sie "y" (yes) auf der Tastatur. \n'
                         'Sind sie nicht identisch, drücken Sie "n" (no) auf der Tastatur. \n\n'
-                        'Sie haben jeweils nur 2 Sekunden Zeit, um zu antworten. \n'
-                        'Versuchen Sie, so akkurat wie möglich zu antworten. \n\n'
                         'Lassen Sie uns mit 2 Beispielen starten. \n\n'
                         'Drücken Sie eine beliebige Taste, wenn Sie bereit sind.',
 
@@ -448,18 +471,19 @@ def main():
                               'Drücken Sie eine beliebige Taste, um die Übungsbeispiele abzuschließen.',
 
         'melody_part2': 'Jetzt beginnt der Test. \n\n'
-                        'Sie werden insgesamt 52 Melodien hören. \n\n'
-                        'Denken Sie daran, dass Sie nur 2 Sekunden Zeit haben, um zu antworten. \n'
+                        'Sie werden insgesamt 52 Melodie-Paare hören. \n\n'
+                        'Sie enthalten zusätzlich einen leisen Metronomton, \n in gleichmäßigen Abständen unterlegt. \n'
+                        'Sie haben 2 Sekunden Zeit, per Tastatur zu antworten. \n'
+                        'Drücken Sie die "y" oder "n" Taste, \n sobald die entsprechenden Button erscheinen. \n'
+                        'Das nächste Melodie-Paar startet automatisch. \n'
                         'Versuchen Sie, so akkurat wie möglich zu antworten. \n\n'
                         'Drücken Sie eine beliebige Taste, wenn Sie bereit sind, anzufangen.',
 
-        'rhythm_part1': 'Willkommen zum Rhythmus-Test. \n\n'
+        'rhythm_part1': 'Rhythmus. \n\n'
                         'Sie werden nun immer zwei kurze Rhythmen hintereinander hören. \n\n'
-                        'Sie müssen entscheiden, ob diese zwei Rhythmen identisch sind: \n'
+                        'Sie müssen entscheiden, ob diese zwei Rhythmen identisch sind. \n'
                         'Sind sie identisch, drücken Sie "y" (yes) auf der Tastatur. \n'
                         'Sind sie nicht identisch, drücken Sie "n" (no) auf der Tastatur. \n\n'
-                        'Sie haben jeweils nur 2 Sekunden Zeit, um zu antworten. \n'
-                        'Versuchen Sie, so akkurat wie möglich zu antworten. \n\n'
                         'Lassen Sie uns mit 2 Beispielen starten. \n\n'
                         'Drücken Sie eine beliebige Taste, wenn Sie bereit sind.',
 
@@ -474,8 +498,11 @@ def main():
                               'Drücken Sie eine beliebige Taste, um die Übungsbeispiele abzuschließen.',
 
         'rhythm_part2': 'Jetzt beginnt der Test. \n\n'
-                        'Sie werden insgesamt 52 Rhythmen hören. \n\n'
-                        'Denken Sie daran, dass Sie nur 2 Sekunden Zeit haben, um zu antworten. \n'
+                        'Sie werden insgesamt 52 Rhythmus-Paare hören. \n'
+                        'Sie enthalten zusätzlich einen leisen Metronomton, \n in gleichmäßigen Abständen unterlegt. \n'
+                        'Sie haben 2 Sekunden Zeit, per Tastatur zu antworten. \n'
+                        'Drücken Sie die "y" oder "n" Taste, \n sobald die entsprechenden Button erscheinen. \n'
+                        'Das nächste Rhythmus-Paar startet automatisch. \n'
                         'Versuchen Sie, so akkurat wie möglich zu antworten. \n\n'
                         'Drücken Sie eine beliebige Taste, wenn Sie bereit sind, anzufangen.',
 
@@ -494,7 +521,6 @@ def main():
     # Get participant information
     participant_info = get_participant_info()
 
-    # Open the experiment window
     currentMonitor = monitors.Monitor(name='testMonitor')
     win = visual.Window(monitors.Monitor.getSizePix(currentMonitor),
                         monitor="testMonitor",
@@ -512,11 +538,17 @@ def main():
     starting_tests = ['melody', 'rhythm']
     random.shuffle(starting_tests)
 
-    # Create the output file with header and save it in results/
-    output_filename = os.path.join(results_path,
-                                   f"results_{participant_info['Subject_ID']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
-    with open(output_filename, 'w') as output_file:
-        output_file.write('trial,type,phase,stimulus,response,correct,accuracy,start_time,end_time,duration\n')
+    # Create the output files with headers and save them in results/
+    practice_output_filename = os.path.join(results_path,
+                                            f"MET_practice_results_{participant_info['Subject_ID']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+    test_output_filename = os.path.join(results_path,
+                                        f"MET_test_results_{participant_info['Subject_ID']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+
+    for output_file in [practice_output_filename, test_output_filename]:
+        with open(output_file, 'w') as file:
+            file.write(
+                'experiment,subject_ID,date,trial,type,phase,stimulus,response,correct,accuracy,start_time,end_time,duration \n'
+                )
 
     # Run the tests in random order
     for i, test in enumerate(starting_tests):
@@ -526,11 +558,30 @@ def main():
 
         # Run the melody or rhythm test depending on the current test type
         if test == 'melody':
-            musical_ear_test(win, 'melody', melody_example_files, melody_test_files, instruction_texts, output_filename,
-                             base_image_path)
+            musical_ear_test(
+                win,
+                'melody',
+                melody_example_files,
+                melody_test_files,
+                instruction_texts,
+                practice_output_filename,
+                test_output_filename,
+                base_image_path,
+                participant_info
+            )
+
         elif test == 'rhythm':
-            musical_ear_test(win, 'rhythm', rhythm_example_files, rhythm_test_files, instruction_texts, output_filename,
-                             base_image_path)
+            musical_ear_test(
+                win,
+                'rhythm',
+                rhythm_example_files,
+                rhythm_test_files,
+                instruction_texts,
+                practice_output_filename,
+                test_output_filename,
+                base_image_path,
+                participant_info
+            )
 
     # Display the end instruction after the last trial of the second test trials
     display_instructions(win, instruction_texts['end'])
