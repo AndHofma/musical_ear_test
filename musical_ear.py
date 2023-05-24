@@ -49,7 +49,7 @@ def get_participant_info():
     exp_data = {
         'experiment': 'musical_ear_test',
         'cur_date': datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-        'Subject_ID': 'subject_ID'
+        'subject': 'subject_ID'
     }
     # Dialogue box to get participant information
     info_dialog = gui.DlgFromDict(dictionary=exp_data, title='Musical Ear Test', fixed=['cur_date', 'experiment'])
@@ -330,7 +330,7 @@ def musical_ear_test(win, test_type, example_files, test_files, instruction_text
 
         test_filename (str): The name of the file where test results should be written.
 
-        participant_info (dict): A dictionary containing information about the participant. It should include keys 'Subject_ID'
+        participant_info (dict): A dictionary containing information about the participant. It should include keys 'subject'
         and 'cur_date' (current date).
 
         Returns:
@@ -339,7 +339,7 @@ def musical_ear_test(win, test_type, example_files, test_files, instruction_text
         output_filename = practice_filename if result['phase'] == 'practice' else test_filename
         with open(output_filename, 'a') as output_file:
             output_file.write(
-                f"{participant_info['experiment']},{participant_info['Subject_ID']},{participant_info['cur_date']},{result['trial']},{result['type']},{result['phase']},{result['stimulus']},{result['response']},{result['correct']},{result['accuracy']},{result['start_time']},{result['end_time']},{result['duration']}\n"
+                f"{participant_info['experiment']},{participant_info['subject']},{participant_info['cur_date']},{result['trial']},{result['type']},{result['phase']},{result['stimulus']},{result['response']},{result['correct']},{result['accuracy']},{result['start_time']},{result['end_time']},{result['duration']}\n"
             )
 
     # Start recording the duration of each task
@@ -538,11 +538,18 @@ def main():
     starting_tests = ['melody', 'rhythm']
     random.shuffle(starting_tests)
 
+    # path setup results per participant
+    # Define the path in results for each subject
+    subj_path_results = os.path.join(results_path, participant_info['subject'])
+    # Create the directory if it doesn't exist
+    if not os.path.exists(subj_path_results):
+        os.makedirs(subj_path_results)
+
     # Create the output files with headers and save them in results/
-    practice_output_filename = os.path.join(results_path,
-                                            f"MET_practice_results_{participant_info['Subject_ID']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
-    test_output_filename = os.path.join(results_path,
-                                        f"MET_test_results_{participant_info['Subject_ID']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+    practice_output_filename = os.path.join(subj_path_results,
+                                            f"MET_practice_results_{participant_info['subject']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+    test_output_filename = os.path.join(subj_path_results,
+                                        f"MET_test_results_{participant_info['subject']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
 
     for output_file in [practice_output_filename, test_output_filename]:
         with open(output_file, 'w') as file:
