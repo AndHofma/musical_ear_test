@@ -17,7 +17,12 @@ import os
 import random
 import datetime
 import time
-from psychopy import visual, core, event, gui, sound, monitors
+from psychopy import visual, core, event, gui, monitors
+from psychopy import prefs
+# Set the audio library preference
+prefs.hardware['audioLib'] = ['pygame', 'pyo', 'PTB', 'sounddevice']
+# Now, import sound
+from psychopy import sound
 import re
 
 
