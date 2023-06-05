@@ -526,13 +526,28 @@ def main():
     # Get participant information
     participant_info = get_participant_info()
 
-    currentMonitor = monitors.Monitor(name='testMonitor')
-    win = visual.Window(monitors.Monitor.getSizePix(currentMonitor),
-                        monitor="testMonitor",
-                        allowGUI=True,
-                        fullscr=True,
-                        color=(255, 255, 255)
-                        )
+    # to use for testing on laptop
+    # currentMonitor = monitors.Monitor(name='testMonitor')
+    # win = visual.Window(monitors.Monitor.getSizePix(currentMonitor),
+    #                     monitor="testMonitor",
+    #                     allowGUI=True,
+    #                     fullscr=True,
+    #                     color=(255, 255, 255)
+    #                     )
+
+    # Create a monitor object for the second screen
+    second_monitor = monitors.Monitor(name='EA273WMi')
+    # Set the appropriate settings for the second monitor
+    second_monitor.setSizePix((1920, 1080))  # Set the desired resolution of the second screen
+
+    # Create and return a window for the experiment on the second monitor
+    win = visual.Window(monitor=second_monitor,  # Use the second monitor
+                         size=(1920, 1080),
+                         screen=1,  # Specify the index of the second screen (0 for the first screen, 1 for the second, etc.)
+                         allowGUI=True,
+                         fullscr=True,
+                         color=(255, 255, 255)
+                         )
     win.flip()
 
     # Load melody and rhythm files from the 'audio' folder
